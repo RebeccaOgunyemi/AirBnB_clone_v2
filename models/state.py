@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 """This is the state class"""
+from sqlalchemy.ext.declarative import declarative_base
 from models.base_model import BaseModel, Base
-from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
-from models.city import City
+from sqlalchemy import Column, Integer, String
 import models
-import os
+from models.city import City
+import shlex
 
 
 class State(BaseModel, Base):
@@ -13,20 +14,22 @@ class State(BaseModel, Base):
     Attributes:
         name: input name
     """
-    __tablename__ = 'states'
-
+    __tablename__ = "states"
     name = Column(String(128), nullable=False)
+    cities = relationship("City", cascade='all, delete, delete-orphan',
+                          backref="state")
 
-    if os.getenv('HBNB_TYPE_STORAGE') == 'db':
-        cities = relationship('City', backref='state', cascade='all, delete')
-
-    else:
-        @property
-        def cities(self):
-            """Return cities"""
-            all_cities = models.storage.all(City)
-            all_cities_state = []
-            for key, value in all_cities.items():
-                if self.id == value.state_id:
-                    all_cities_state.append(value)
-            return all_cities_state
+    @property
+    def cities(self):
+        var = models.storage.all()
+        lista = []
+        result = []
+        for key in var:
+            city = key.replace('.', ' ')
+            city = shlex.split(city)
+            if (city[0] == 'City'):
+                lista.append(var[key])
+        for elem in lista:
+            if (elem.state_id == self.id):
+                result.append(elem)
+        return (result)
